@@ -6,7 +6,7 @@ README = (HERE / "README.md").read_text()
 
 setup(
     name="evenstar",
-    version="0.1",
+    version="0.2",
     author="Yaser Amiri",
     author_email="yaser.amiri95@gmail.com",
     url="https://github.com/Yaser-Amiri/evenstar",
@@ -19,6 +19,9 @@ setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
+        "TOPIC :: SOFTWARE DEVELOPMENT :: OBJECT BROKERING",
+        "TOPIC :: SOFTWARE DEVELOPMENT :: LIBRARIES",
+        "TOPIC :: SOFTWARE DEVELOPMENT",
     ),
     keywords="graphql",
     zip_safe=False,
