@@ -10,7 +10,7 @@ setup(
     author="Yaser Amiri",
     author_email="yaser.amiri95@gmail.com",
     url="https://github.com/Yaser-Amiri/evenstar",
-    description="GraphQL query build",
+    description="A GraphQL query builder",
     long_description=README,
     long_description_content_type="text/markdown",
     license="MIT",
