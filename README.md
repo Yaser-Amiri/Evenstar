@@ -84,5 +84,5 @@ gql_req = Request(
     },
 )
 
-gql_req.json()
+print(gql_req.json(indent=2))
 ```

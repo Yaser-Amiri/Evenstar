@@ -77,16 +77,19 @@ class InlineFragment(object):
         self.on = on
         self.children = children
 
-    def render(self, json_encoder: Any = None) -> str:
+    def render(self, json_encoder: Any = None, indent: int = 0) -> str:
+        spaces = indent * " "
         if not self.children:
             raise ValueError("InlineFragment must have at least one child.")
-
         result = "... on %s {\n" % self.on
         for c in self.children:
             if isinstance(c, str):
-                result += "%s\n" % c
+                result += "{spaces}{field}\n".format(spaces=spaces, field=c)
             elif isinstance(c, Field):
-                result += "%s\n" % c.render(json_encoder)
+                for line in c.render(json_encoder, indent).split("\n"):
+                    result += "{spaces}{field}\n".format(
+                        spaces=spaces, field=line
+                    )
             else:
                 raise TypeError(
                     "InlineFragment's children must be Field or str,"
@@ -167,21 +170,20 @@ class Field(object):
 
     Args:
         name (str): Name of field
-        alias (:obj:`int`, optional): Alias of the field (like `car: automobile`)
-            Default is `None`
-        arguments (:obj:`Arguments`, optional): Arguments (Defualt is `None`)
-        children: (:obj:`List[Union[Field, InlineFragment, str]]`, optional):
+        alias (:obj:`Optional[str]`, optional): Alias of the field (like `car: automobile`),
+            default is `None`.
+        arguments (:obj:`Optional[Arguments]`, optional): Arguments (Defualt is `None`)
+        children: (:obj:`Optional[List[Union[Field, InlineFragment, str]]]`, optional):
             List of members (inner fields), a member can be another Field,
-            a InlineFragment or a str. Default is `None`
+            a InlineFragment or a str, default is `None`
 
     Attributes:
         name (str): Name of field
-        alias (:obj:`str`, optional): Alias of the field (like `car: automobile`)
-            Default is `None`
-        arguments (:obj:`Arguments`, optional): Arguments (Defualt is `None`)
-        children: (:obj:`List[Union[Field, InlineFragment, str]]`, optional):
+        alias (:obj:`Optional[str]`, optional): Alias of the field (like `car: automobile`)
+        arguments (:obj:`Optional[Arguments]`, optional): Arguments
+        children: (:obj:`Optional[List[Union[Field, InlineFragment, str]]]`, optional):
             List of members (inner fields), a member can be another Field,
-            a InlineFragment or a str. Default is `None`
+            a InlineFragment or a str.
 
     Examples:
         >>> Field("blah").render()
@@ -202,6 +204,7 @@ class Field(object):
             ccc: c2
         }
     """  # noqa: E501
+
     def __init__(
         self,
         name: str,
@@ -214,7 +217,8 @@ class Field(object):
         self.arguments = arguments
         self.children = children
 
-    def render(self, json_encoder: Any = None) -> str:
+    def render(self, json_encoder: Any = None, indent: int = 0) -> str:
+        spaces = indent * " "
         result = ""
         if self.alias:
             result += "%s: " % self.alias
@@ -225,9 +229,14 @@ class Field(object):
             result += " {\n"
             for c in self.children:
                 if isinstance(c, str):
-                    result += "%s\n" % c
+                    result += "{spaces}{field}\n".format(
+                        spaces=spaces, field=c
+                    )
                 elif isinstance(c, (InlineFragment, Field)):
-                    result += "%s\n" % c.render(json_encoder)
+                    for line in c.render(json_encoder, indent).split("\n"):
+                        result += "{spaces}{field}\n".format(
+                            spaces=spaces, field=line
+                        )
                 else:
                     raise TypeError(
                         "Fields's children must be Field or InlineFragment"
@@ -241,19 +250,21 @@ class Query(object):
     """Represents a query operation
 
     Args:
-        name (:obj:`str`, optional): name of the operation, default is `None`
+        name (:obj:`Optional[str]`, optional): Name of the operation,
+            default is `None`
         children (`List[Union[Field, str]]`):
             List of members, a member can be a Field or a str.
-        variables (:obj:`List[VarDeclaration]`, optional):
+        variables (:obj:`Optional[List[VarDeclaration]]`, optional):
             You can define variables of the query operation here.
+            Default is `None`
 
     Attributes:
-        name (:obj:`str`, optional): name of the operation, default is `None`
+        name (:obj:`Optional[str]`, optional): Name of the operation.
         children (`List[Union[Field, str]]`):
             List of members, a member can be a Field or a str.
-        variables (:obj:`List[VarDeclaration]`, optional):
+        variables (:obj:`Optional[List[VarDeclaration]]`, optional):
             You can define variables of the query operation here.
-    """  # noqa: E501
+    """
 
     keyword = "query"
 
@@ -271,12 +282,16 @@ class Query(object):
         self.children = children
         self.variables = variables
 
-    def render(self, json_encoder: Any = None) -> str:
+    def render(self, json_encoder: Any = None, indent: int = 0) -> str:
+        spaces = indent * " "
+
         # Open
         result = "%s" % self.keyword
+
         # Add name
         if self.name:
             result += " %s" % self.name
+
         # Add variables
         if self.variables:
             variables_q = " ("
@@ -301,9 +316,12 @@ class Query(object):
         result += " {\n"
         for c in self.children:
             if isinstance(c, str):
-                result += "%s\n" % c
+                result += "{spaces}{field}\n".format(spaces=spaces, field=c)
             elif isinstance(c, Field):
-                result += "%s\n" % c.render(json_encoder)
+                for line in c.render(json_encoder, indent).split("\n"):
+                    result += "{spaces}{field}\n".format(
+                        spaces=spaces, field=line
+                    )
             else:
                 raise TypeError(
                     "Operation's children must be Field or str,"
@@ -315,22 +333,24 @@ class Query(object):
 
 
 class Mutation(Query):
-    """Represents a mutattion operation
+    """Represents a mutation operation
 
     Args:
-        name (:obj:`str`, optional): name of the operation, default is `None`
+        name (:obj:`Optional[str]`, optional): Name of the operation,
+            default is `None`.
         children (`List[Union[Field, str]]`):
             List of members, a member can be a Field or a str.
-        variables (:obj:`List[VarDeclaration]`, optional):
-            You can define variables of the query operation here.
+        variables (:obj:`Optional[List[VarDeclaration]]`, optional):
+            You can define variables of the mutation operation here.
+            Default is `None`
 
     Attributes:
-        name (:obj:`str`, optional): name of the operation, default is `None`
+        name (:obj:`Optional[str]`, optional): Name of the operation.
         children (`List[Union[Field, str]]`):
             List of members, a member can be a Field or a str.
-        variables (:obj:`List[VarDeclaration]`, optional):
-            You can define variables of the query operation here.
-    """  # noqa: E501
+        variables (:obj:`Optional[List[VarDeclaration]]`, optional):
+            You can define variables of the mutation operation here.
+    """
 
     keyword = "mutation"
 
@@ -339,15 +359,15 @@ class Request(object):
     """A whole request including query, variables and operation name
 
     Args:
-        operation_name (:obj:`str`, optional): name of the operation which
-            we want to execute, default is `None`
+        operation_name (:obj:`Optional[str]`, optional): name of the operation which
+            we want to execute, default is `None`.
         children (`List[Union[Mutation, Query]]`):
             List of members, queries and mutations.
         variables (Dict[str, Any]): Variables
 
     Attributes:
-        operation_name (:obj:`str`, optional): name of the operation which
-            we want to execute, default is `None`
+        operation_name (:obj:`Optional[str]`, optional): name of the operation which
+            we want to execute.
         children (`List[Union[Mutation, Query]]`):
             List of members, queries and mutations.
         variables (Dict[str, Any]): Variables
@@ -380,7 +400,9 @@ class Request(object):
         self.operation_name = operation_name
         self.variables = variables
 
-    def json(self, json_encoder: Any = None) -> Dict[str, Any]:
+    def json(
+        self, json_encoder: Any = None, indent: int = 0
+    ) -> Dict[str, Any]:
         """This function renders everthing and puts to togather
         query, operation name and variables to create a dictionary
         which you can dump it as a request body.
@@ -388,12 +410,14 @@ class Request(object):
         Args:
             json_encoder (:obj:`Any`, optional): A json encoder class,
                 default is `None`
+            indent (:obj:`int`, optional): Spance count as indent,
+                it's usefull for pretty printing, default is `0`
         Returns:
             Dict[str, Any]: GraphQL request body as a dictionary
         """
         result: Dict[str, Any] = {
             "query": "\n\n".join(
-                [c.render(json_encoder) for c in self.children]
+                [c.render(json_encoder, indent) for c in self.children]
             )
         }
         if self.operation_name:
